@@ -13,6 +13,16 @@ void DictionaryModel::reset()
     finger = 0;
 }
 
+void DictionaryModel::disp()
+{
+    for (std::size_t i = 0; i < 256; i++)
+    {
+        std::cout << std::setw(3) << (reinterpret_cast<char&>(i) == '\n' ? 'N' : reinterpret_cast<char&>(i));
+        std::cout << std::setw(15) << frequency[i];
+        std::cout << std::endl;
+    }
+}
+
 uint64_t DictionaryModel::frq(uint8_t byte)
 {
     return frequency[byte];
@@ -46,6 +56,11 @@ bool DictionaryModel::next(uint8_t& byte, uint64_t& f)
     
     finger++;
     return true;
+}
+
+void DictionaryModel::set_escape(bool mode)
+{
+    
 }
 
 void DictionaryModel::update(uint8_t byte)

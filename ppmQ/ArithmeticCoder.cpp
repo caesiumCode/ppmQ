@@ -11,7 +11,6 @@ obstream::obstream(const std::string &filepath)
 
 obstream& obstream::operator<<(bool bit)
 {
-    //std::cout << bit;
     if (bit) buffer[byte_pos] |= 1 << bit_pos;
     
     next_bit();
@@ -22,7 +21,7 @@ obstream& obstream::operator<<(bool bit)
 obstream& obstream::operator<<(uint64_t num)
 {
     for (uint32_t d = 63; d < 64; d--) this->operator<<(bool((num >> d) & 1));
-    
+        
     return *this;
 }
 
@@ -127,7 +126,7 @@ void ArithmeticCoder::encode(const std::string &filepath)
     // Encoding
     uint64_t lower = 0;
     uint64_t upper = WHOLE;
-    uint8_t  s     = 0;
+    uint64_t s     = 0;
     
     TimerMeasure START = Timer::now();
     while (!fin.eof() && read > 0)
@@ -137,52 +136,69 @@ void ArithmeticCoder::encode(const std::string &filepath)
         
         for (std::size_t i = 0; i < read; i++)
         {
-            uint8_t byte = reinterpret_cast<uint8_t&>(buffer_in[i]);
-            
-            uint64_t w = upper - lower;
-            
-            uint64_t cdf = model.cdf(byte);
-            uint64_t f   = model.frq(byte);
-            uint64_t sum = model.sum();
-            
-            upper = lower + std::llround( double(w) * double(cdf + f) / double(sum) );
-            lower = lower + std::llround( double(w) * double(cdf)     / double(sum) );
-            
-            // Rescaling
-            while (true)
+            bool escape = false;
+            model.set_escape(false);
+            do
             {
-                if (upper < HALF)
-                {
-                    // emit [0] + s*[1]
-                    fout << false;
-                    for (uint8_t k = 0; k < s; k++) fout << true;
-                    
-                    s = 0;
-                }
-                else if (lower > HALF)
-                {
-                    // emit [1] + s*[0]
-                    fout << true;
-                    for (uint8_t k = 0; k < s; k++) fout << false;
-                    
-                    s = 0;
-                    lower -= HALF;
-                    upper -= HALF;
-                }
-                else if (lower > QUARTER && upper < TQUARTER)
-                {
-                    s++;
-                    lower -= QUARTER;
-                    upper -= QUARTER;
-                }
-                else break;
+                uint8_t byte = reinterpret_cast<uint8_t&>(buffer_in[i]);
                 
-                lower <<= 1;
-                upper <<= 1;
+                uint64_t w = upper - lower;
+                
+                uint64_t cdf = model.cdf(byte);
+                uint64_t f   = model.frq(byte);
+                uint64_t sum = model.sum();
+                
+                if (f == 0)
+                {
+                    byte = ESCAPE;
+                    cdf  = model.cdf(byte);
+                    f    = model.frq(byte);
+                    
+                    escape = true;
+                }
+                else escape = false;
+                
+                upper = lower + std::llround( double(w) * double(cdf + f) / double(sum) );
+                lower = lower + std::llround( double(w) * double(cdf)     / double(sum) );
+                
+                // Rescaling
+                while (true)
+                {
+                    if (upper < HALF)
+                    {
+                        // emit [0] + s*[1]
+                        fout << false;
+                        for (uint64_t k = 0; k < s; k++) fout << true;
+                        
+                        s = 0;
+                    }
+                    else if (lower > HALF)
+                    {
+                        // emit [1] + s*[0]
+                        fout << true;
+                        for (uint64_t k = 0; k < s; k++) fout << false;
+                        
+                        s = 0;
+                        lower -= HALF;
+                        upper -= HALF;
+                    }
+                    else if (lower > QUARTER && upper < TQUARTER)
+                    {
+                        s++;
+                        lower -= QUARTER;
+                        upper -= QUARTER;
+                    }
+                    else break;
+                    
+                    lower <<= 1;
+                    upper <<= 1;
+                }
+                
+                // update model
+                model.update(byte);
+                model.set_escape(escape);
             }
-            
-            // update model
-            model.update(byte);
+            while (escape);
         }
     }
     
@@ -192,13 +208,13 @@ void ArithmeticCoder::encode(const std::string &filepath)
     {
         // emit [0] + s*[1]
         fout << false;
-        for (uint8_t k = 0; k < s; k++) fout << true;
+        for (uint64_t k = 0; k < s; k++) fout << true;
     }
     else
     {
         // emit [1] + s*[0]
         fout << true;
-        for (uint8_t k = 0; k < s; k++) fout << false;
+        for (uint64_t k = 0; k < s; k++) fout << false;
     }
     
     fout.flush();
@@ -263,8 +279,13 @@ void ArithmeticCoder::decode(const std::string &filepath)
             if (lower_new <= z && z < upper_new)
             {
                 buffer_out[buffer_pos] = reinterpret_cast<char&>(character);
-                buffer_pos++;
-                output_size++;
+                
+                if (character != ESCAPE)
+                {
+                    buffer_pos++;
+                    output_size++;
+                }
+                
                 if (buffer_pos >= BUFFER_SIZE)
                 {
                     fout.write(buffer_out.data(), BUFFER_SIZE);
@@ -287,6 +308,7 @@ void ArithmeticCoder::decode(const std::string &filepath)
                 
                 // update model
                 model.update(character);
+                model.set_escape(character == ESCAPE);
                 
                 break;
             }

@@ -9,7 +9,7 @@
 #include <cmath>
 #include <chrono>
 
-#include "DictionaryModel.hpp"
+#include "Model.hpp"
 
 using Timer         = std::chrono::high_resolution_clock;
 using TimerMeasure  = std::chrono::time_point<Timer>;
@@ -70,6 +70,8 @@ private:
     
 private:
     const uint64_t BUFFER_SIZE = 1048576;
+    
+    const uint8_t ESCAPE = 0;
     
     const uint64_t WHOLE      = uint64_t(1) << 32;
     const uint64_t HALF       = uint64_t(1) << 31;

@@ -1,18 +1,17 @@
-#ifndef DictionaryModel_hpp
-#define DictionaryModel_hpp
+#ifndef AdaptativeDictionaryModel_hpp
+#define AdaptativeDictionaryModel_hpp
 
 #include <array>
 #include <iostream>
 #include <iomanip>
-#include <unordered_map>
+#include <vector>
 
 #include "Model.hpp"
 
-
-class DictionaryModel : public Model
+class AdaptativeDictionaryModel : public Model
 {
 public:
-    DictionaryModel();
+    AdaptativeDictionaryModel();
     
     void reset();
     void disp();
@@ -27,11 +26,15 @@ public:
     
     void update(uint8_t byte);
     
-private:    
-    std::array<uint64_t, 256> frequency;
+private:
+    std::array<std::size_t, 256> symbol_map;
+    
+    std::vector<uint8_t>  symbol;
+    std::vector<uint64_t> counter;
     uint64_t total;
     
+    bool        escape;
     std::size_t finger;
 };
 
-#endif /* DictionaryModel_hpp */
+#endif /* AdaptativeDictionaryModel_hpp */
