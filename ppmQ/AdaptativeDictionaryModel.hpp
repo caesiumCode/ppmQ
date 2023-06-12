@@ -12,6 +12,7 @@ class AdaptativeDictionaryModel : public Model
 {
 public:
     AdaptativeDictionaryModel();
+    ~AdaptativeDictionaryModel() = default;
     
     void reset();
     void disp();

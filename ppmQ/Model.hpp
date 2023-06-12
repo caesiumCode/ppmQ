@@ -7,6 +7,7 @@ class Model
 {
 public:
     Model() = default;
+    ~Model() = default;
     
     virtual void reset() = 0;
     virtual void disp() = 0;

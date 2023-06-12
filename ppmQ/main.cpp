@@ -1,23 +1,22 @@
 #include "ArithmeticCoder.hpp"
 #include "AdaptativeDictionaryModel.hpp"
-#include "DictionaryModel.hpp"
+#include "PPMModel.hpp"
 
 
 
 int main(int argc, const char * argv[])
 {
-    //DictionaryModel model;
-    AdaptativeDictionaryModel model;
+    //AdaptativeDictionaryModel model;
+    PPMModel model;
+    model.set_order(5);
     
     ArithmeticCoder coder(model);
     
-    std::string filepath_toencode = "/Users/stephen/Desktop/Research Assistant/text compression/dataset/enwik9";
-    std::string filepath_todecode = "/Users/stephen/Desktop/Research Assistant/text compression/dataset/enwik9.iac";
+    std::string filepath_toencode = "/Users/stephen/Desktop/Research Assistant/text compression/dataset/enwik8";
+    std::string filepath_todecode = "/Users/stephen/Desktop/Research Assistant/text compression/dataset/enwik8.iac";
     
     coder.encode(filepath_toencode);
-    //model.disp();
     coder.decode(filepath_todecode);
-    //model.disp();
     
     return 0;
 }

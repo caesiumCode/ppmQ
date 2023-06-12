@@ -12,7 +12,6 @@
 		DC664B982A2EC508003F05DE /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DC664B972A2EC508003F05DE /* main.cpp */; };
 		DC664BA02A2F0A70003F05DE /* ArithmeticCoder.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DC664B9E2A2F0A70003F05DE /* ArithmeticCoder.cpp */; };
 		DC664BA32A30760B003F05DE /* Model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DC664BA12A30760B003F05DE /* Model.cpp */; };
-		DC664BA62A307B9F003F05DE /* DictionaryModel.cpp in Sources */ = {isa = PBXBuildFile; fileRef = DC664BA42A307B9F003F05DE /* DictionaryModel.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -38,8 +37,6 @@
 		DC664B9F2A2F0A70003F05DE /* ArithmeticCoder.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ArithmeticCoder.hpp; sourceTree = "<group>"; };
 		DC664BA12A30760B003F05DE /* Model.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Model.cpp; sourceTree = "<group>"; };
 		DC664BA22A30760B003F05DE /* Model.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Model.hpp; sourceTree = "<group>"; };
-		DC664BA42A307B9F003F05DE /* DictionaryModel.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DictionaryModel.cpp; sourceTree = "<group>"; };
-		DC664BA52A307B9F003F05DE /* DictionaryModel.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = DictionaryModel.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,8 +74,6 @@
 				DC664B9F2A2F0A70003F05DE /* ArithmeticCoder.hpp */,
 				DC664BA12A30760B003F05DE /* Model.cpp */,
 				DC664BA22A30760B003F05DE /* Model.hpp */,
-				DC664BA42A307B9F003F05DE /* DictionaryModel.cpp */,
-				DC664BA52A307B9F003F05DE /* DictionaryModel.hpp */,
 				DC3A0EE32A32CCB200CF19D2 /* AdaptativeDictionaryModel.cpp */,
 				DC3A0EE42A32CCB200CF19D2 /* AdaptativeDictionaryModel.hpp */,
 				DC3A0EE62A3310FC00CF19D2 /* PPMModel.cpp */,
@@ -149,7 +144,6 @@
 				DC664B982A2EC508003F05DE /* main.cpp in Sources */,
 				DC664BA02A2F0A70003F05DE /* ArithmeticCoder.cpp in Sources */,
 				DC3A0EE52A32CCB200CF19D2 /* AdaptativeDictionaryModel.cpp in Sources */,
-				DC664BA62A307B9F003F05DE /* DictionaryModel.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
