@@ -1,7 +1,4 @@
 #include "ArithmeticCoder.hpp"
-#include "AdaptativeDictionaryModel.hpp"
-#include "PPMModel.hpp"
-
 
 
 int main(int argc, const char * argv[])

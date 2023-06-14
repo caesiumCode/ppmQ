@@ -1,56 +1,43 @@
 #ifndef PPMModel_hpp
 #define PPMModel_hpp
 
-#include "Model.hpp"
-
-#include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <iostream>
 #include <vector>
 #include <utility>
 #include <iomanip>
 
+struct Statistic
+{
+    uint64_t cdf;
+    uint64_t count;
+    uint64_t total;
+};
+
 struct ContextNode
 {
     ContextNode()
     {
-        symbol   = '\0';
-        total    = 1;
-        children = {{0, {1, nullptr}}};
+        symbol   = 0;
+        count    = 0;
+        children = {};
     }
     ~ContextNode()
     {
-        for (const auto&[s, child] : children) if (s != 0) delete child.second;
+        for (const auto& child : children) delete child;
     }
     
-    void print(std::string& stack)
-    {
-        stack.push_back(reinterpret_cast<char&>(symbol));
-        std::cout << stack << std::endl;
-        std::cout << "| total=" << total << std::endl;
-        for (const auto&[s, child] : children)
-        {
-            uint8_t ss = s;
-            char ch = reinterpret_cast<char&>(ss);
-            std::cout << "| " << (ch == '\n' ? 'N' : ch) << std::setw(13) << child.first << std::endl;
-        }
-        std::cout << std::endl;
-        for (const auto&[s, child] : children)
-        {
-            if (s != 0) child.second->print(stack);
-        }
-        stack.pop_back();
-    }
+    uint8_t symbol;
+    //uint8_t count;
+    uint32_t count;
     
-    uint8_t  symbol;
-    uint64_t total;
-    
-    std::unordered_map<uint8_t, std::pair<uint64_t, ContextNode*>> children;
+    std::vector<ContextNode*> children;
 };
 
-using map_iterator = std::unordered_map<uint8_t, std::pair<uint64_t, ContextNode*>>::iterator;
+using map_iterator = std::unordered_map<uint8_t, ContextNode*>::iterator;
 
-class PPMModel : public Model
+class PPMModel
 {
 public:
     PPMModel();
@@ -59,10 +46,10 @@ public:
     void set_order(uint8_t order);
     
     void reset();
-    void disp();
     
+    void     stat(uint8_t byte, Statistic& s);
+    void     stat_escape(Statistic& s);
     uint64_t frq(uint8_t byte);
-    uint64_t cdf(uint8_t byte);
     uint64_t sum();
     
     void init_search();
@@ -71,17 +58,35 @@ public:
     
     void update(uint8_t byte);
     
-private:
+private: // Context Trie Model
     uint8_t ORDER;
     
     ContextNode* root;
+    std::array<bool, 256> exclusion;
     
-    std::vector<ContextNode*>   hand;
-    int8_t                      finger;
+private: // Search shortcut
+    std::vector<ContextNode*> hand;
+    int8_t   finger;
+    uint16_t null_finger;
+    uint16_t context_finger;
     
-private:
-    uint16_t     null_finger;
-    map_iterator context_finger;
+private: // Log Counter
+    std::array<uint64_t, 64>    lc_value;
+    std::array<std::size_t, 64> lc_pointer;
+    std::size_t                 lc_offset;
+    
+    void increment_counter(uint8_t& counter);
+    
+private: // Fast Pseudo-Random Generator (https://prng.di.unimi.it/splitmix64.c)
+    std::array<uint64_t, 64> rng_mask;
+    uint64_t                 rng_state;
+    
+    uint64_t rng();
+    
+private: // memory management
+    static const std::size_t CHUNCK_SIZE = std::size_t(1) << 16;
+    
+    std::vector<std::array<ContextNode, CHUNCK_SIZE>> memory;
 };
 
 #endif /* PPMModel_hpp */

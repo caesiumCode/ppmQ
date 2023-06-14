@@ -9,7 +9,7 @@
 #include <cmath>
 #include <chrono>
 
-#include "Model.hpp"
+#include "PPMModel.hpp"
 
 using Timer         = std::chrono::high_resolution_clock;
 using TimerMeasure  = std::chrono::time_point<Timer>;
@@ -60,13 +60,13 @@ private:
 class ArithmeticCoder
 {
 public:
-    ArithmeticCoder(Model& input_model);
+    ArithmeticCoder(PPMModel& input_model);
     
     void encode(const std::string& filepath);
     void decode(const std::string& filepath);
     
 private:
-    Model& model;
+    PPMModel& model;
     
 private:
     const uint64_t BUFFER_SIZE = 1048576;

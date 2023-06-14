@@ -97,7 +97,7 @@ void ibstream::next_bit()
 
 
 
-ArithmeticCoder::ArithmeticCoder(Model& input_model)
+ArithmeticCoder::ArithmeticCoder(PPMModel& input_model)
 : model(input_model)
 {
     
@@ -128,6 +128,11 @@ void ArithmeticCoder::encode(const std::string &filepath)
     uint64_t upper = WHOLE;
     uint64_t s     = 0;
     
+    Statistic stat;
+    uint64_t& cdf   = stat.cdf;
+    uint64_t& f     = stat.count;
+    uint64_t& sum   = stat.total;
+    
     TimerMeasure START = Timer::now();
     while (!fin.eof() && read > 0)
     {
@@ -137,22 +142,18 @@ void ArithmeticCoder::encode(const std::string &filepath)
         for (std::size_t i = 0; i < read; i++)
         {
             bool escape = false;
-            model.set_escape(false);
             do
             {
                 uint8_t byte = reinterpret_cast<uint8_t&>(buffer_in[i]);
                 
                 uint64_t w = upper - lower;
                 
-                uint64_t cdf = model.cdf(byte);
-                uint64_t f   = model.frq(byte);
-                uint64_t sum = model.sum();
+                model.stat(byte, stat);
                 
                 if (f == 0)
                 {
                     byte = ESCAPE;
-                    cdf  = model.cdf(byte);
-                    f    = model.frq(byte);
+                    model.stat_escape(stat);
                     
                     escape = true;
                 }
@@ -199,6 +200,7 @@ void ArithmeticCoder::encode(const std::string &filepath)
                 model.set_escape(escape);
             }
             while (escape);
+            model.set_escape(false);
         }
     }
     
@@ -264,17 +266,17 @@ void ArithmeticCoder::decode(const std::string &filepath)
     TimerMeasure START = Timer::now();
     while (true)
     {
+        model.init_search();
         uint64_t cdf = 0;
         uint64_t f;
+        uint64_t sum = model.sum();
         uint8_t  character;
-        model.init_search();
         while (model.next(character, f))
         {
-            uint64_t w   = upper - lower;
-            uint64_t sum = model.sum();
+            uint64_t w = upper - lower;
             
-            uint64_t upper_new = lower + std::llround( double(w) * double(cdf + f) / double(sum) );
-            uint64_t lower_new = lower + std::llround( double(w) * double(cdf)     / double(sum) );
+            uint64_t upper_new = lower + std::llround( (double(w) * double(cdf + f)) / double(sum) );
+            uint64_t lower_new = lower + std::llround( (double(w) * double(cdf)    ) / double(sum) );
             
             if (lower_new <= z && z < upper_new)
             {
