@@ -3,7 +3,6 @@
 PPMModel::PPMModel()
 {
     ORDER = 0;
-    root = nullptr;
     reset();
     
     for (std::size_t i = 0; i < 64; i++) lc_value[i] = uint64_t(1) << i;
@@ -13,26 +12,22 @@ PPMModel::PPMModel()
     for (std::size_t i = 2; i < 64; i++) rng_mask[i] = rng_mask[i-1] + lc_value[i];
 }
 
-PPMModel::~PPMModel()
-{
-    delete root;
-}
-
 void PPMModel::set_order(uint8_t order)
 {
     ORDER = order;
-    hand.resize(ORDER, nullptr);
 }
 
 
 void PPMModel::reset()
 {
-    delete root;
+    // Memory
+    memory.clear();
+    memory.push_back(std::vector<ContextNode>(CHUNCK_SIZE));
+    next_free = 1;
     
-    root = new ContextNode;
+    root = &memory[0][0];
     
-    hand    = std::vector<ContextNode*>(ORDER+1, nullptr);
-    hand[0] = root;
+    hand    = {root};
     finger  = -1;
     
     // highly specialised variables
@@ -50,61 +45,81 @@ void PPMModel::stat(uint8_t byte, Statistic& s)
         s.count = 1;
         s.total = 256;
     }
+    else if (byte == 0)
+    {
+        uint8_t      length = 0;
+        ContextNode* node   = Idx2Ptr(hand[finger]->child);
+        
+        s.cdf = 0;
+        while (node != root)
+        {
+            s.cdf += inclusion[node->symbol] * Rnk2Val(node->count);
+            length++;
+            
+            node = Idx2Ptr(node->brother);
+        }
+        
+        s.count = length;
+        s.total = s.cdf + s.count;
+    }
     else
     {
-        std::vector<ContextNode*>& set = hand[finger]->children;
-        std::size_t i   = 0;
+        uint8_t      length = 0;
+        ContextNode* node   = Idx2Ptr(hand[finger]->child);
         
         s.cdf   = 0;
         s.count = 0;
-        s.total = set.size();
-        bool new_sym = false;
         
-        for (i = 0; i < set.size() && set[i]->symbol != byte; i++) if (!exclusion[set[i]->symbol]) s.cdf += set[i]->count;// lc_value[lc_pointer[set[i]->count]];
-        
-        if (i < set.size()) s.count = set[i]->count;// lc_value[lc_pointer[set[i]->count]];
-        else if (byte == 0) s.count = set.size();
-        else                new_sym = true;
-        
-        s.total += s.cdf;
-        for (; i < set.size(); i++) if (!exclusion[set[i]->symbol]) s.total += set[i]->count;// lc_value[lc_pointer[set[i]->count]];
-        
-        if (new_sym)
+        // cdf
+        while (node != root && node->symbol != byte)
         {
-            s.cdf   = s.total;
-            s.count = 0;
+            s.cdf += inclusion[node->symbol] * Rnk2Val(node->count);
+            length++;
+            
+            node = Idx2Ptr(node->brother);
         }
+        
+        // freq
+        if (node != root) s.count = Rnk2Val(node->count);
+        
+        // total
+        s.total = s.cdf;
+        while (node != root)
+        {
+            s.total += inclusion[node->symbol] * Rnk2Val(node->count);
+            length++;
+            
+            node = Idx2Ptr(node->brother);
+        }
+        
+        s.total += length;
+        if (s.count == 0) s.cdf = s.total;
     }
-}
-
-void PPMModel::stat_escape(Statistic& s)
-{
-    s.count = hand[finger]->children.size();
-    s.cdf  -= hand[finger]->children.size();
-    
-}
-
-uint64_t PPMModel::frq(uint8_t byte)
-{
-    if (finger == -1)   return 1;
-    if (byte == 0)      return hand[finger]->children.size();
-    
-    for (const auto& child : hand[finger]->children) if (child->symbol == byte) return child->count;// lc_value[lc_pointer[child->count]];
-    return 0;
 }
 
 uint64_t PPMModel::sum()
 {
     if (finger == -1) return 256;
     
-    uint64_t c = hand[finger]->children.size();
-    for (const auto& child : hand[finger]->children) if (!exclusion[child->symbol]) c += child->count;// lc_value[lc_pointer[child->count]];
-    return c;
+    uint8_t length    = 0;
+    ContextNode* node = Idx2Ptr(hand[finger]->child);
+    
+    uint64_t c = 0;
+    
+    while (node != root)
+    {
+        c += inclusion[node->symbol] * Rnk2Val(node->count);
+        length++;
+        
+        node = Idx2Ptr(node->brother);
+    }
+    
+    return c + length;
 }
 
 void PPMModel::init_search()
 {
-    if (finger >= 0) context_finger = 0;
+    if (finger >= 0) context_finger = hand[finger]->child;
     else             null_finger    = 0;
 }
 
@@ -123,22 +138,30 @@ bool PPMModel::next(uint8_t& byte, uint64_t& f)
     {
         do
         {
-            if (context_finger == hand[finger]->children.size())
+            if (context_finger == 0)
             {
+                ContextNode* node = Idx2Ptr(hand[finger]->child);
+                
                 byte = 0;
-                f    = hand[finger]->children.size();
+                f    = 0;
+                
+                while (node != root)
+                {
+                    f++;
+                    node = Idx2Ptr(node->brother);
+                }
             }
             else
             {
-                const ContextNode* node = hand[finger]->children[context_finger];
+                ContextNode* node = Idx2Ptr(context_finger);
                 
                 byte = node->symbol;
-                f    = node->count;//lc_value[lc_pointer[node->count]];
+                f    = Rnk2Val(node->count);
                 
-                context_finger++;
+                context_finger = Idx2Ptr(context_finger)->brother;
             }
         }
-        while(exclusion[byte]);
+        while(!inclusion[byte]);
     }
     
     return true;
@@ -148,22 +171,21 @@ void PPMModel::set_escape(bool mode)
 {
     if (mode)
     {
-        for (const auto& child : hand[finger]->children) exclusion[child->symbol] = true;
+        for (ContextNode* node = Idx2Ptr(hand[finger]->child); node != root; node = Idx2Ptr(node->brother)) inclusion[node->symbol] = false;
         
         finger--;
         
-        if (finger >= 0) context_finger = 0;
+        if (finger >= 0) context_finger = hand[finger]->child;
         else             null_finger    = 0;
     }
     else if (!mode)
     {
-        finger = ORDER;
-        while (hand[finger] == nullptr)                      finger--;
-        while (finger > 0 && hand[finger]->children.empty()) finger--;
+        finger = hand.size()-1;
+        while (finger > 0 && hand[finger]->child == 0) finger--;
         
-        context_finger = 0;
+        context_finger = hand[finger]->child;
         
-        std::fill(exclusion.begin(), exclusion.end(), false);
+        std::fill(inclusion.begin(), inclusion.end(), true);
     }
 }
 
@@ -171,41 +193,66 @@ void PPMModel::update(uint8_t byte)
 {
     if (byte != 0)
     {
-        std::vector<std::size_t> indexes(ORDER+1, 0);
-        //increment_counter(hand[0]->count);
-        hand[0]->count++;
+        std::vector<ContextIdx> indexes(ORDER+1, 0);
+        increment_counter(hand[0]->count);
+        //hand[0]->count++;
         
-        for (std::size_t k = 0; k <= ORDER; k++) if (hand[k])
+        for (std::size_t k = 0; k < hand.size(); k++)
         {
-            std::size_t set_size = hand[k]->children.size();
-            std::size_t& i       = indexes[k];
-            while (i < set_size && hand[k]->children[i]->symbol != byte) i++;
+            ContextIdx idx_rev = 0;
+            ContextIdx idx     = hand[k]->child;
             
-            if (i < set_size) hand[k]->children[i]->count++;// increment_counter(hand[k]->children[i]->count);
-            else
+            while (idx != 0 && Idx2Ptr(idx)->symbol != byte)
             {
-                ContextNode* new_symbol = new ContextNode;
-                new_symbol->symbol      = byte;
-                new_symbol->count       = 1;// lc_offset;
-                new_symbol->children    = {};
-                
-                hand[k]->children.push_back(new_symbol);
+                idx_rev = idx;
+                idx = Idx2Ptr(idx)->brother;
             }
             
-            while (i > 0 && hand[k]->children[i]->count >= hand[k]->children[i-1]->count)
+            if (idx != 0)
             {
-                std::swap(hand[k]->children[i-1], hand[k]->children[i]);
-                i--;
+                increment_counter(Idx2Ptr(idx)->count);
+                //Idx2Ptr(idx)->count++;
+                
+                if (idx != hand[k]->child && idx_rev != 0)
+                {
+                    Idx2Ptr(idx_rev)->brother = Idx2Ptr(idx)->brother;
+                    Idx2Ptr(idx)->brother     = hand[k]->child;
+                    
+                    hand[k]->child = idx;
+                }
+            }
+            else
+            {
+                ContextIdx new_idx = (uint32_t(memory.size()-1) * CHUNCK_OFFSET) + next_free;
+                ContextNode* new_node = Idx2Ptr(new_idx);
+                new_node->symbol    = byte;
+                new_node->count     = lc_offset;
+                new_node->brother   = hand[k]->child;
+                
+                hand[k]->child = new_idx;
+                
+                if (next_free == CHUNCK_SIZE-1)
+                {
+                    memory.push_back(std::vector<ContextNode>(CHUNCK_SIZE));
+                    next_free = 0;
+                }
+                else next_free++;
             }
         }
         
-        for (std::size_t k = ORDER; k > 0; k--) if (hand[k-1]) hand[k] = hand[k-1]->children[indexes[k-1]];
+        if (hand.size() <= ORDER) hand.push_back(nullptr);
+        for (std::size_t k = hand.size()-1; k > 0; k--) hand[k] = Idx2Ptr(hand[k-1]->child);
     }
 }
 
-void PPMModel::increment_counter(uint8_t& counter)
+uint64_t PPMModel::Rnk2Val(uint8_t rank)
 {
-    if ((rng() & rng_mask[counter >= lc_offset ? counter - lc_offset : 0 ]) == 0) counter++;
+    return lc_value[lc_pointer[rank]];
+}
+
+void PPMModel::increment_counter(uint8_t& rank)
+{
+    if ((rng() & rng_mask[rank >= lc_offset ? rank - lc_offset : 0 ]) == 0) rank++;
 }
 
 uint64_t PPMModel::rng()
@@ -214,4 +261,9 @@ uint64_t PPMModel::rng()
     z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
     z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
     return z ^ (z >> 31);
+}
+
+ContextNode* PPMModel::Idx2Ptr(ContextIdx idx)
+{
+    return &memory[idx >> 16][idx & COORD_MASK];
 }

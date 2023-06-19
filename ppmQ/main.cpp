@@ -5,7 +5,7 @@ int main(int argc, const char * argv[])
 {
     //AdaptativeDictionaryModel model;
     PPMModel model;
-    model.set_order(5);
+    model.set_order(6);
     
     ArithmeticCoder coder(model);
     

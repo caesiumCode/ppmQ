@@ -153,7 +153,7 @@ void ArithmeticCoder::encode(const std::string &filepath)
                 if (f == 0)
                 {
                     byte = ESCAPE;
-                    model.stat_escape(stat);
+                    model.stat(byte, stat);
                     
                     escape = true;
                 }
