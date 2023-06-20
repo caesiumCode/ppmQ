@@ -222,7 +222,7 @@ void ArithmeticCoder::encode(const std::string &filepath)
     fout.flush();
     
     TimerMeasure END = Timer::now();
-    std::cout << "time: " << std::chrono::duration<double>(END - START).count() << std::endl;
+    //std::cout << "time: " << std::chrono::duration<double>(END - START).count() << std::endl;
 }
 
 void ArithmeticCoder::decode(const std::string &filepath)
@@ -271,6 +271,7 @@ void ArithmeticCoder::decode(const std::string &filepath)
         uint64_t f;
         uint64_t sum = model.sum();
         uint8_t  character;
+        
         while (model.next(character, f))
         {
             uint64_t w = upper - lower;
