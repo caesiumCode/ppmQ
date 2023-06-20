@@ -1,6 +1,8 @@
 #ifndef PPMModel_hpp
 #define PPMModel_hpp
 
+#include <limits>
+#include <cmath>
 #include <unordered_set>
 #include <string>
 #include <iostream>
