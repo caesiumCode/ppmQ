@@ -3,7 +3,7 @@
 
 int main(int argc, const char * argv[])
 {
-    std::string filepath_toencode = "/data/gpfs/projects/COMP90055/txtcomp/metawiki-latest-iwlinks";
+    std::string filepath_toencode = "/data/gpfs/projects/COMP90055/txtcomp/metawiki-latest-iwlinks-small";
     std::string filepath_todecode = "/data/gpfs/projects/COMP90055/txtcomp/metawiki-latest-iwlinks.iac";
     
     std::vector<uint8_t> orders = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
