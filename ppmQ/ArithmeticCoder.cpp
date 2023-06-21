@@ -103,12 +103,12 @@ ArithmeticCoder::ArithmeticCoder(PPMModel& input_model)
     
 }
 
-std::string get_encoding_filepath(const std::string& filepath)
+std::string ArithmeticCoder::get_encoding_filepath(const std::string& filepath)
 {
     std::size_t pos = filepath.find_last_of('.');
     
-    if (pos == std::string::npos)   return filepath                 + ".iac";
-    else                            return filepath.substr(0, pos)  + ".iac";
+    if (pos == std::string::npos)   return filepath                 + "_" + model.get_order() + ".iac";
+    else                            return filepath.substr(0, pos)  + "_" + model.get_order() + ".iac";
 }
 
 void ArithmeticCoder::encode(const std::string &filepath)

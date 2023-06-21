@@ -50,6 +50,8 @@ public:
     void set_max_context(uint32_t max_context = std::numeric_limits<uint32_t>::max());
     void disp();
     void disp_trie();
+    
+    std::string get_order();
     std::string get_parameters();
     
     void reset();

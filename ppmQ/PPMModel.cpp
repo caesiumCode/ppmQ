@@ -115,6 +115,11 @@ std::string PPMModel::get_parameters()
     return std::to_string(ORDER) + "," + std::to_string(MAX_CONTEXT) + "," + std::to_string(memory_size);
 }
 
+std::string PPMModel::get_order()
+{
+    return std::to_string(ORDER);
+}
+
 
 void PPMModel::reset()
 {

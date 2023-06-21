@@ -62,6 +62,8 @@ class ArithmeticCoder
 public:
     ArithmeticCoder(PPMModel& input_model);
     
+    std::string get_encoding_filepath(const std::string& filepath);
+    
     void encode(const std::string& filepath);
     void decode(const std::string& filepath);
     
